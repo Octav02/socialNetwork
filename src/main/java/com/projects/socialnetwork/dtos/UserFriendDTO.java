@@ -47,11 +47,7 @@ public class UserFriendDTO {
 
     @Override
     public String toString() {
-        return "UserFriendDTO{" +
-                "username='" + username + '\'' +
-                ", email='" + email + '\'' +
-                ", friendsSince=" + friendsSince +
-                '}';
+        return username;
     }
 
     @Override

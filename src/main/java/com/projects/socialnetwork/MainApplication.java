@@ -1,7 +1,10 @@
 package com.projects.socialnetwork;
 
 import com.projects.socialnetwork.controllers.LoginController;
+import com.projects.socialnetwork.models.Message;
+import com.projects.socialnetwork.models.User;
 import com.projects.socialnetwork.repositories.databaseRepository.FriendshipDBRepository;
+import com.projects.socialnetwork.repositories.databaseRepository.MessageDBRepository;
 import com.projects.socialnetwork.repositories.databaseRepository.UserDBRepository;
 import com.projects.socialnetwork.services.NetworkService;
 import javafx.application.Application;
@@ -11,21 +14,37 @@ import javafx.scene.layout.AnchorPane;
 import javafx.stage.Stage;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
+import java.util.List;
 
 public class MainApplication extends Application {
     private NetworkService service;
 
+    public static void main(String[] args) {
+
+        launch();
+    }
+
     @Override
     public void start(Stage stage) throws IOException {
-
 
 
         String url = "jdbc:postgresql://localhost:5432/social_network";
         String username = System.getenv("DB_USERNAME");
         String password = System.getenv("DB_PASSWORD");
         UserDBRepository userDBRepository = new UserDBRepository(url, username, password);
+
+        MessageDBRepository messageDBRepository = new MessageDBRepository(url, username, password, userDBRepository);
+//        User octav = userDBRepository.getUserByUsername("octav").get();
+//        User tudor = userDBRepository.getUserByUsername("tudor").get();
+//        User Tavi = userDBRepository.getUserByUsername("Tavi").get();
+//
+//        List<User> to = List.of(Tavi, tudor);
+//        Message message = new Message(octav,to,"Salut", LocalDateTime.now());
+//        messageDBRepository.save(message);
+
         FriendshipDBRepository friendshipDBRepository = new FriendshipDBRepository(url, username, password, userDBRepository);
-        service = new NetworkService(userDBRepository, friendshipDBRepository);
+        service = new NetworkService(userDBRepository, friendshipDBRepository, messageDBRepository);
         initView(stage);
         stage.show();
     }
@@ -38,10 +57,5 @@ public class MainApplication extends Application {
 
         LoginController loginController = loginLoader.getController();
         loginController.setService(service);
-    }
-
-    public static void main(String[] args) {
-
-        launch();
     }
 }

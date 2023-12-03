@@ -5,10 +5,12 @@ import com.projects.socialnetwork.enums.FriendshipRequestStatus;
 import com.projects.socialnetwork.exceptions.FriendshipConflictException;
 import com.projects.socialnetwork.exceptions.UserConflictException;
 import com.projects.socialnetwork.models.Friendship;
+import com.projects.socialnetwork.models.Message;
 import com.projects.socialnetwork.models.User;
 import com.projects.socialnetwork.dtos.UserFriendshipDTO;
 import com.projects.socialnetwork.repositories.Repository;
 import com.projects.socialnetwork.repositories.databaseRepository.FriendshipDBRepository;
+import com.projects.socialnetwork.repositories.databaseRepository.MessageDBRepository;
 import com.projects.socialnetwork.repositories.databaseRepository.UserDBRepository;
 import javafx.scene.input.InputMethodTextRun;
 
@@ -24,9 +26,12 @@ public class NetworkService implements Service {
     UserDBRepository userRepository;
     FriendshipDBRepository friendshipRepository;
 
-    public NetworkService(UserDBRepository userRepository, FriendshipDBRepository friendshipRepository) {
+    MessageDBRepository messageDBRepository;
+
+    public NetworkService(UserDBRepository userRepository, FriendshipDBRepository friendshipRepository, MessageDBRepository messageDBRepository) {
         this.userRepository = userRepository;
         this.friendshipRepository = friendshipRepository;
+        this.messageDBRepository = messageDBRepository;
     }
 
     @Override
@@ -108,8 +113,7 @@ public class NetworkService implements Service {
         ).findFirst().orElseThrow();
 
         friendship.setFriendshipStatus(FriendshipRequestStatus.REJECTED);
-//        //TODO: Sterge din baza de date in loc de Rejected
-//        friendshipRepository.update(friendship);
+
         friendshipRepository.delete(friendship.getId());
     }
 
@@ -296,5 +300,29 @@ public class NetworkService implements Service {
 
     public User getUserByUsername(String username) {
         return userRepository.getUserByUsername(username).orElseThrow(() -> new IllegalArgumentException("User does not exist"));
+    }
+
+    public void sendOneToOneMessage(User sender, User receiver, String message) {
+
+        List<User> to = List.of(receiver);
+
+        Message message1 = new Message(sender, to, message, LocalDateTime.now());
+        messageDBRepository.save(message1);
+    }
+
+    public void sendOneToManyMessage(User sender, List<User> receivers, String message) {
+        Message message1 = new Message(sender, receivers, message, LocalDateTime.now());
+        messageDBRepository.save(message1);
+    }
+
+    public Iterable<Message> getAllMessages() {
+        return messageDBRepository.getAll();
+    }
+
+    public Iterable<Message> getMessagesBetweenUsers(User user1, User user2) {
+        return StreamSupport.stream(messageDBRepository.getAll().spliterator(), false)
+                .filter(message -> message.getFrom().equals(user1) && message.getTo().contains(user2) ||
+                        message.getFrom().equals(user2) && message.getTo().contains(user1))
+                .collect(Collectors.toSet());
     }
 }
