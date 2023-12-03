@@ -18,6 +18,7 @@ import java.io.IOException;
 
 public class LoginController {
     public TextField usernameTextField;
+
     public PasswordField passwordTextField;
     public Button loginButton;
 
