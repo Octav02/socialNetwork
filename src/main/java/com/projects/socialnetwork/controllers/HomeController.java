@@ -5,6 +5,7 @@ import com.projects.socialnetwork.models.Friendship;
 import com.projects.socialnetwork.models.Message;
 import com.projects.socialnetwork.models.User;
 import com.projects.socialnetwork.services.NetworkService;
+import com.projects.socialnetwork.utils.observers.Observer;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
@@ -26,7 +27,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-public class HomeController {
+public class HomeController implements Observer {
     public Label welcomeUserLabel;
     public TableView<UserFriendDTO> tableViewFriends;
     public TableView<User> tableViewAllUsers;
@@ -47,6 +48,7 @@ public class HomeController {
     private User loggedInUser;
 
     private User selectedUser;
+    private UserFriendDTO lastSelectedFriend;
 
     private ObservableList<User> allUsersModel = FXCollections.observableArrayList();
 
@@ -57,23 +59,21 @@ public class HomeController {
 
     public void setService(NetworkService service) {
         this.service = service;
+        service.addObserver(this);
         initModel();
     }
 
     private void initModel() {
         Iterable<User> users = service.getAllUsers();
-        List<User> userList = StreamSupport.stream(users.spliterator(), false)
-                .toList();
+        List<User> userList = StreamSupport.stream(users.spliterator(), false).toList();
         allUsersModel.setAll(userList);
 
         Iterable<UserFriendDTO> friends = service.getFriendsOfUser(loggedInUser.getId());
-        List<UserFriendDTO> friendsList = StreamSupport.stream(friends.spliterator(), false)
-                .toList();
+        List<UserFriendDTO> friendsList = StreamSupport.stream(friends.spliterator(), false).toList();
         friendsModel.setAll(friendsList);
 
         Iterable<Friendship> friendRequests = service.getPendingFriendRequests(loggedInUser.getId());
-        List<Friendship> friendRequestList = StreamSupport.stream(friendRequests.spliterator(), false)
-                .toList();
+        List<Friendship> friendRequestList = StreamSupport.stream(friendRequests.spliterator(), false).toList();
         recievedFriendRequestModel.setAll(friendRequestList);
 
 
@@ -81,28 +81,44 @@ public class HomeController {
 
     @FXML
     private void initialize() {
+        initializeTableColumns();
+        initializeTableViewItems();
+        initializeListViewItems();
+        initializeMessageFriendsListViewListener();
+        initializeMessagesListViewCellFactory();
+    }
+
+    private void initializeTableColumns() {
         tableColumnUsername.setCellValueFactory(new PropertyValueFactory<User, String>("username"));
         tableColumnEmail.setCellValueFactory(new PropertyValueFactory<User, String>("email"));
         tableColumnFirstName.setCellValueFactory(new PropertyValueFactory<User, String>("firstName"));
         tableColumnLastName.setCellValueFactory(new PropertyValueFactory<User, String>("lastName"));
-        tableViewAllUsers.setItems(allUsersModel);
 
         friendTableColumnUsername.setCellValueFactory(new PropertyValueFactory<UserFriendDTO, String>("username"));
         friendTableColumnEmail.setCellValueFactory(new PropertyValueFactory<UserFriendDTO, String>("email"));
         tableColumnFriendsSince.setCellValueFactory(new PropertyValueFactory<UserFriendDTO, String>("friendsSince"));
+    }
+
+    private void initializeTableViewItems() {
+        tableViewAllUsers.setItems(allUsersModel);
         tableViewFriends.setItems(friendsModel);
+    }
 
+    private void initializeListViewItems() {
         messageFriendsListView.setItems(friendsModel);
-
-
         pendingRequestListView.setItems(recievedFriendRequestModel);
+    }
 
+    private void initializeMessageFriendsListViewListener() {
         messageFriendsListView.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
             if (newValue != null) {
+                lastSelectedFriend = newValue;
                 populateMessagesListView(newValue);
             }
         });
+    }
 
+    private void initializeMessagesListViewCellFactory() {
         messagesListView.setCellFactory(param -> new ListCell<Message>() {
             @Override
             protected void updateItem(Message item, boolean empty) {
@@ -112,18 +128,16 @@ public class HomeController {
                     setText(null);
                     setGraphic(null);
                 } else {
-                    setText(item.getMessage());
+                    String messageFormatText = item.getFrom().getUsername() + ": " + item.getMessage();
+                    setText(messageFormatText);
                     if (item.getFrom().equals(loggedInUser)) {
                         setAlignment(Pos.CENTER_RIGHT);
-                        setStyle("-fx-background-color: lightblue;");
                     } else {
                         setAlignment(Pos.CENTER_LEFT);
-                        setStyle("-fx-background-color: lightgreen;");
                     }
                 }
             }
         });
-
     }
 
     public void setLoggedInUser(User loggedInUser) {
@@ -151,20 +165,9 @@ public class HomeController {
     }
 
     public void handleLogOut(ActionEvent event) throws IOException {
-        FXMLLoader loginLoader = new FXMLLoader();
-        loginLoader.setLocation(getClass().getResource("/com/projects/socialnetwork/views/login-view.fxml"));
         Stage homeStage = (Stage) ((Node) event.getSource()).getScene().getWindow();
-
-
-        AnchorPane loginLayout = loginLoader.load();
-        Scene scene = new Scene(loginLayout);
-        homeStage.setScene(scene);
-
-
-        LoginController loginController = loginLoader.getController();
-        loginController.setService(service);
-
-        homeStage.show();
+        service.removeObserver(this);
+        homeStage.close();
 
     }
 
@@ -213,9 +216,7 @@ public class HomeController {
     private void populateMessagesListView(UserFriendDTO selectedFriend) {
         User friendUser = service.getUserByUsername(selectedFriend.getUsername());
         Iterable<Message> messages = service.getMessagesBetweenUsers(loggedInUser, friendUser);
-        List<Message> messagesList = StreamSupport.stream(messages.spliterator(), false)
-                .sorted(Comparator.comparing(Message::getSentAt))
-                .collect(Collectors.toList());
+        List<Message> messagesList = StreamSupport.stream(messages.spliterator(), false).sorted(Comparator.comparing(Message::getSentAt)).collect(Collectors.toList());
         ObservableList<Message> messagesModel = FXCollections.observableArrayList(messagesList);
         messagesListView.setItems(messagesModel);
     }
@@ -240,22 +241,17 @@ public class HomeController {
     }
 
 
-
     public void handleSendSingleMessage(KeyEvent keyEvent) {
-        UserFriendDTO selectedFriend = messageFriendsListView.getSelectionModel().getSelectedItem();
         if (keyEvent.getCode().toString().equals("ENTER")) {
             String message = messageTextField.getText();
             User sender = loggedInUser;
-            User receiver = service.getUserByUsername(selectedFriend.getUsername());
+            User receiver = service.getUserByUsername(lastSelectedFriend.getUsername());
+
             service.sendOneToOneMessage(sender, receiver, message);
 
-            populateMessagesListView(selectedFriend);
+            populateMessagesListView(lastSelectedFriend);
             messageTextField.clear();
 
-            Alert alert = new Alert(Alert.AlertType.INFORMATION);
-            alert.setTitle("Information");
-            alert.setContentText("Message sent!");
-            alert.showAndWait();
         }
     }
 
@@ -274,12 +270,21 @@ public class HomeController {
             messageAllStage.setScene(scene);
             messageAllStage.show();
 
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             Alert alert = new Alert(Alert.AlertType.ERROR);
             alert.setTitle("Error");
             alert.setContentText(e.getMessage());
             alert.showAndWait();
         }
+    }
+
+    @Override
+    public void update() {
+        initModel();
+
+        if (lastSelectedFriend != null) {
+            populateMessagesListView(lastSelectedFriend);
+        }
+        initializeMessagesListViewCellFactory();
     }
 }
