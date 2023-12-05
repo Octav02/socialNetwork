@@ -49,21 +49,21 @@ public class LoginController {
     private void loadMainView(User loggedInUser, ActionEvent event) throws IOException {
         FXMLLoader homeLoader = new FXMLLoader();
         homeLoader.setLocation(getClass().getResource("/com/projects/socialnetwork/views/home-view.fxml"));
-        Stage homeStage = (Stage) ((Node) event.getSource()).getScene().getWindow();
-
 
         Parent homeLayout = homeLoader.load();
         Scene scene = new Scene(homeLayout);
-        homeStage.setScene(scene);
-
 
         HomeController homeController = homeLoader.getController();
         homeController.setLoggedInUser(loggedInUser);
         homeController.setService(service);
 
-
-
+        Stage homeStage = new Stage();
+        homeStage.setScene(scene);
         homeStage.show();
+
+        // Minimize the login window
+        Stage loginStage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+        loginStage.setIconified(true);
     }
 
     public void handleGoToSignup(ActionEvent event) {

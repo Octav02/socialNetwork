@@ -12,6 +12,8 @@ import com.projects.socialnetwork.repositories.Repository;
 import com.projects.socialnetwork.repositories.databaseRepository.FriendshipDBRepository;
 import com.projects.socialnetwork.repositories.databaseRepository.MessageDBRepository;
 import com.projects.socialnetwork.repositories.databaseRepository.UserDBRepository;
+import com.projects.socialnetwork.utils.observers.Observable;
+import com.projects.socialnetwork.utils.observers.Observer;
 import javafx.scene.input.InputMethodTextRun;
 
 import java.time.LocalDateTime;
@@ -21,12 +23,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-public class NetworkService implements Service {
+public class NetworkService implements Service, Observable {
 
-    UserDBRepository userRepository;
-    FriendshipDBRepository friendshipRepository;
+    private List<Observer> observers = new ArrayList<>();
+    private UserDBRepository userRepository;
+    private FriendshipDBRepository friendshipRepository;
 
-    MessageDBRepository messageDBRepository;
+    private MessageDBRepository messageDBRepository;
 
     public NetworkService(UserDBRepository userRepository, FriendshipDBRepository friendshipRepository, MessageDBRepository messageDBRepository) {
         this.userRepository = userRepository;
@@ -80,6 +83,7 @@ public class NetworkService implements Service {
 
         Friendship friendship = new Friendship(sender, receiver, LocalDateTime.now(), FriendshipRequestStatus.PENDING);
         friendshipRepository.save(friendship);
+        notifyObservers();
     }
 
     @Override
@@ -97,6 +101,7 @@ public class NetworkService implements Service {
 
         friendship.setFriendshipStatus(FriendshipRequestStatus.ACCEPTED);
         friendshipRepository.update(friendship);
+        notifyObservers();
     }
 
     @Override
@@ -115,6 +120,7 @@ public class NetworkService implements Service {
         friendship.setFriendshipStatus(FriendshipRequestStatus.REJECTED);
 
         friendshipRepository.delete(friendship.getId());
+        notifyObservers();
     }
 
 
@@ -151,6 +157,7 @@ public class NetworkService implements Service {
         user2.removeFriend(user1);
         user1.removeFriend(user2);
         friendshipRepository.delete(friendshipToDelete.getId());
+        notifyObservers();
     }
 
 
@@ -308,11 +315,13 @@ public class NetworkService implements Service {
 
         Message message1 = new Message(sender, to, message, LocalDateTime.now());
         messageDBRepository.save(message1);
+        notifyObservers();
     }
 
     public void sendOneToManyMessage(User sender, List<User> receivers, String message) {
         Message message1 = new Message(sender, receivers, message, LocalDateTime.now());
         messageDBRepository.save(message1);
+        notifyObservers();
     }
 
     public Iterable<Message> getAllMessages() {
@@ -320,9 +329,27 @@ public class NetworkService implements Service {
     }
 
     public Iterable<Message> getMessagesBetweenUsers(User user1, User user2) {
+
         return StreamSupport.stream(messageDBRepository.getAll().spliterator(), false)
                 .filter(message -> message.getFrom().equals(user1) && message.getTo().contains(user2) ||
                         message.getFrom().equals(user2) && message.getTo().contains(user1))
                 .collect(Collectors.toSet());
+
+    }
+
+    @Override
+    public void addObserver(Observer observer) {
+        observers.add(observer);
+    }
+
+    @Override
+    public void removeObserver(Observer observer) {
+        observers.remove(observer);
+    }
+
+    @Override
+    public void notifyObservers() {
+        for (Observer o : observers)
+            o.update();
     }
 }
