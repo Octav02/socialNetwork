@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ListView?>
 <?import javafx.scene.control.Tab?>
@@ -10,8 +11,7 @@
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.AnchorPane?>
 
-<AnchorPane
-        maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="448.0" prefWidth="691.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.projects.socialnetwork.controllers.HomeController">
+<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="448.0" prefWidth="691.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.projects.socialnetwork.controllers.HomeController">
     <children>
         <TabPane prefHeight="448.0" prefWidth="691.0" tabClosingPolicy="UNAVAILABLE">
             <tabs>
@@ -29,7 +29,7 @@
                     <content>
                         <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="395.0" prefWidth="579.0">
                             <children>
-                                <TableView fx:id="tableViewFriends" layoutY="41.0" prefHeight="322.0" prefWidth="707.0">
+                                <TableView fx:id="tableViewFriends" layoutY="41.0" prefHeight="202.0" prefWidth="691.0">
                                     <columns>
                                         <TableColumn fx:id="friendTableColumnUsername" prefWidth="134.0" text="Username" />
                                         <TableColumn fx:id="friendTableColumnEmail" minWidth="0.0" prefWidth="169.0" text="Email" />
@@ -38,6 +38,10 @@
                                 </TableView>
                                 <Label layoutX="276.0" layoutY="14.0" prefHeight="16.0" prefWidth="156.0" text="Friends List" />
                         <Button layoutX="293.0" layoutY="366.0" mnemonicParsing="false" onAction="#handleDeleteFriend" text="Delete Friend" />
+                        <Button layoutX="370.0" layoutY="292.0" mnemonicParsing="false" onAction="#handleNextPageFriends" text="&gt;" />
+                        <Button layoutX="293.0" layoutY="292.0" mnemonicParsing="false" onAction="#handlePreviousPageFriends" text="&lt;" />
+                        <Label fx:id="labelFriendsPageNumber" layoutX="341.0" layoutY="296.0" text="0" />
+                        <ComboBox onAction="#handleChangePageSizeFriends" layoutX="571.0" layoutY="292.0" prefHeight="24.0" prefWidth="70.0" fx:id="pageSizeComboBoxFriends"/>
                             </children>
                         </AnchorPane>
                     </content>
@@ -48,7 +52,7 @@
                      <children>
                         <ListView fx:id="messageFriendsListView" prefHeight="417.0" prefWidth="283.0" />
                         <ListView fx:id="messagesListView" layoutX="305.0" prefHeight="308.0" prefWidth="387.0" />
-                        <Button  onAction="#handleGoToMessageAll" layoutX="421.0" layoutY="372.0" mnemonicParsing="false" text="Send to Many" />
+                        <Button layoutX="421.0" layoutY="372.0" mnemonicParsing="false" onAction="#handleGoToMessageAll" text="Send to Many" />
                         <TextField fx:id="messageTextField" layoutX="305.0" layoutY="329.0" onKeyPressed="#handleSendSingleMessage" prefHeight="25.0" prefWidth="387.0" />
                      </children>
                   </AnchorPane>
@@ -59,7 +63,7 @@
                     <content>
                         <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
                             <children>
-                                <TableView fx:id="tableViewAllUsers" layoutX="-4.0" onMouseClicked="#handleUserSelection" prefHeight="359.0" prefWidth="691.0">
+                                <TableView fx:id="tableViewAllUsers" onMouseClicked="#handleUserSelection" prefHeight="270.0" prefWidth="691.0">
                                     <columns>
                                         <TableColumn fx:id="tableColumnUsername" prefWidth="126.0" text="Username" />
                                         <TableColumn fx:id="tableColumnEmail" minWidth="5.0" prefWidth="124.0" text="Email" />
@@ -68,6 +72,11 @@
                                     </columns>
                                 </TableView>
                                 <Button layoutX="269.0" layoutY="367.0" mnemonicParsing="false" onAction="#handleSendRequest" text="Send Friend Request" />
+                        <Button layoutX="371.0" layoutY="303.0" mnemonicParsing="false" onAction="#handleNextPage" text="&gt;" />
+                        <Button layoutX="284.0" layoutY="303.0" mnemonicParsing="false" onAction="#handlePreviousPage" text="&lt;" />
+                        <Label fx:id="pageNumberLabel" layoutX="337.0" layoutY="307.0" text="1" />
+                        <ComboBox fx:id="pageSizeComboBox" layoutX="504.0" layoutY="303.0" onAction="#ChangeCurrentPageSize" prefWidth="150.0" />
+
                             </children>
                         </AnchorPane>
                     </content>

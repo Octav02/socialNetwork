@@ -4,6 +4,9 @@ import com.projects.socialnetwork.dtos.UserFriendDTO;
 import com.projects.socialnetwork.models.Friendship;
 import com.projects.socialnetwork.models.Message;
 import com.projects.socialnetwork.models.User;
+import com.projects.socialnetwork.repositories.paging.Page;
+import com.projects.socialnetwork.repositories.paging.Pageable;
+import com.projects.socialnetwork.repositories.paging.PageableImplementation;
 import com.projects.socialnetwork.services.NetworkService;
 import com.projects.socialnetwork.utils.observers.Observer;
 import javafx.collections.FXCollections;
@@ -42,8 +45,18 @@ public class HomeController implements Observer {
     public ListView<UserFriendDTO> messageFriendsListView;
     public ListView<Message> messagesListView;
     public TextField messageTextField;
+    public Label pageNumberLabel;
+    public ComboBox<Integer> pageSizeComboBox;
+    public Label labelFriendsPageNumber;
+    public ComboBox<Integer> pageSizeComboBoxFriends;
 
     private NetworkService service;
+
+    private int currentPageNumber;
+
+    private int currentPageNumberFriends;
+    private int currentPageSize;
+    private int currentPageSizeFriends;
 
     private User loggedInUser;
 
@@ -64,13 +77,17 @@ public class HomeController implements Observer {
     }
 
     private void initModel() {
-        Iterable<User> users = service.getAllUsers();
-        List<User> userList = StreamSupport.stream(users.spliterator(), false).toList();
+        Pageable pageable = new PageableImplementation(currentPageNumber, currentPageSize);
+        Page<User> userPage = service.getAllUsersPaged(pageable);
+        List<User> userList = StreamSupport.stream(userPage.getContent().spliterator(), false).toList();
         allUsersModel.setAll(userList);
 
-        Iterable<UserFriendDTO> friends = service.getFriendsOfUser(loggedInUser.getId());
-        List<UserFriendDTO> friendsList = StreamSupport.stream(friends.spliterator(), false).toList();
-        friendsModel.setAll(friendsList);
+        Pageable pageable1 = new PageableImplementation(currentPageNumberFriends, currentPageSizeFriends);
+        Page<UserFriendDTO> userFriendDTOPage = service.getFriendsOfUserPaged(loggedInUser.getId(), pageable1);
+        List<UserFriendDTO> userFriendDTOList = StreamSupport.stream(userFriendDTOPage.getContent().spliterator(), false).toList();
+        friendsModel.setAll(userFriendDTOList);
+
+
 
         Iterable<Friendship> friendRequests = service.getPendingFriendRequests(loggedInUser.getId());
         List<Friendship> friendRequestList = StreamSupport.stream(friendRequests.spliterator(), false).toList();
@@ -81,12 +98,30 @@ public class HomeController implements Observer {
 
     @FXML
     private void initialize() {
+        initializeComboBox();
         initializeTableColumns();
         initializeTableViewItems();
         initializeListViewItems();
         initializeMessageFriendsListViewListener();
         initializeMessagesListViewCellFactory();
     }
+
+    private void initializeComboBox() {
+        pageSizeComboBox.getItems().addAll(2, 5, 10, 15);
+        currentPageNumber = 1;
+        currentPageSize = 5;
+        pageSizeComboBox.getSelectionModel().select(1);
+
+        pageNumberLabel.setText("1");
+
+        pageSizeComboBoxFriends.getItems().addAll(2, 5, 10, 15);
+        currentPageNumberFriends = 1;
+        currentPageSizeFriends = 2;
+        pageSizeComboBoxFriends.getSelectionModel().select(0);
+
+        labelFriendsPageNumber.setText("1");
+    }
+
 
     private void initializeTableColumns() {
         tableColumnUsername.setCellValueFactory(new PropertyValueFactory<User, String>("username"));
@@ -138,6 +173,8 @@ public class HomeController implements Observer {
                 }
             }
         });
+        //Go to the last message
+        messagesListView.scrollTo(messagesListView.getItems().size() - 1);
     }
 
     public void setLoggedInUser(User loggedInUser) {
@@ -219,6 +256,8 @@ public class HomeController implements Observer {
         List<Message> messagesList = StreamSupport.stream(messages.spliterator(), false).sorted(Comparator.comparing(Message::getSentAt)).collect(Collectors.toList());
         ObservableList<Message> messagesModel = FXCollections.observableArrayList(messagesList);
         messagesListView.setItems(messagesModel);
+        messagesListView.scrollTo(messagesListView.getItems().size() - 1);
+
     }
 
     public void handleDeleteFriend(ActionEvent event) {
@@ -286,5 +325,73 @@ public class HomeController implements Observer {
             populateMessagesListView(lastSelectedFriend);
         }
         initializeMessagesListViewCellFactory();
+    }
+
+    public void handlePreviousPage(ActionEvent actionEvent) {
+        if (currentPageNumber > 1) {
+            currentPageNumber--;
+            pageNumberLabel.setText(String.valueOf(currentPageNumber));
+            initModel();
+        } else {
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Error");
+            alert.setContentText("You are on the first page!");
+            alert.showAndWait();
+        }
+    }
+
+    public void handleNextPage(ActionEvent actionEvent) {
+        if (service.getAllUsersPaged(new PageableImplementation(currentPageNumber + 1, currentPageSize)).getContent().count() > 0) {
+            currentPageNumber++;
+            pageNumberLabel.setText(String.valueOf(currentPageNumber));
+            initModel();
+        } else {
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Error");
+            alert.setContentText("You are on the last page!");
+            alert.showAndWait();
+        }
+        initModel();
+    }
+
+    public void ChangeCurrentPageSize(ActionEvent actionEvent) {
+        currentPageSize = pageSizeComboBox.getSelectionModel().getSelectedItem();
+        System.out.println(currentPageSize);
+        System.out.println(currentPageNumber);
+        initModel();
+    }
+
+    public void handleNextPageFriends(ActionEvent actionEvent) {
+        if (service.getFriendsOfUserPaged(loggedInUser.getId(), new PageableImplementation(currentPageNumberFriends + 1, currentPageSizeFriends)).getContent().count() > 0) {
+            currentPageNumberFriends++;
+            labelFriendsPageNumber.setText(String.valueOf(currentPageNumberFriends));
+            initModel();
+        } else {
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Error");
+            alert.setContentText("You are on the last page!");
+            alert.showAndWait();
+        }
+        initModel();
+    }
+
+    public void handlePreviousPageFriends(ActionEvent actionEvent) {
+        if (currentPageNumberFriends > 1) {
+            currentPageNumberFriends--;
+            labelFriendsPageNumber.setText(String.valueOf(currentPageNumberFriends));
+            initModel();
+        } else {
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Error");
+            alert.setContentText("You are on the first page!");
+            alert.showAndWait();
+        }
+    }
+
+    public void handleChangePageSizeFriends(ActionEvent actionEvent) {
+        currentPageSizeFriends = pageSizeComboBoxFriends.getSelectionModel().getSelectedItem();
+        System.out.println(currentPageSizeFriends);
+        System.out.println(currentPageNumberFriends);
+        initModel();
     }
 }

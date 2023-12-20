@@ -12,23 +12,23 @@ import java.time.LocalDateTime;
 import java.util.*;
 
 public class FriendshipDBRepository implements Repository<UUID, Friendship> {
-    String url;
-    String username;
-    String password;
+    protected String sqlurl;
+    protected  String sqlusername;
+    protected String sqlpassword;
     private Validator<Friendship> validator;
-    UserDBRepository userRepository;
+    protected UserDBRepository userRepository;
 
-    public FriendshipDBRepository(String url, String username, String password, UserDBRepository userRepository) {
-        this.url = url;
-        this.username = username;
-        this.password = password;
+    public FriendshipDBRepository(String sqlurl, String sqlusername, String sqlpassword, UserDBRepository userRepository) {
+        this.sqlurl = sqlurl;
+        this.sqlusername = sqlusername;
+        this.sqlpassword = sqlpassword;
         this.userRepository = userRepository;
         validator = new FriendshipValidator();
     }
 
     @Override
     public Optional<Friendship> getById(UUID uuid) {
-        try(Connection connection = DriverManager.getConnection(url, username, password)) {
+        try(Connection connection = DriverManager.getConnection(sqlurl, sqlusername, sqlpassword)) {
             PreparedStatement statement = connection.prepareStatement("select * from friendships where id = ?");
             statement.setObject(1, uuid);
             ResultSet resultSet = statement.executeQuery();
@@ -53,7 +53,7 @@ public class FriendshipDBRepository implements Repository<UUID, Friendship> {
 
     @Override
     public Iterable<Friendship> getAll() {
-        try(Connection connection = DriverManager.getConnection(url, username, password)) {
+        try(Connection connection = DriverManager.getConnection(sqlurl, sqlusername, sqlpassword)) {
             Set<Friendship> friendships = new HashSet<>();
             PreparedStatement statement = connection.prepareStatement("select * from friendships");
             ResultSet resultSet = statement.executeQuery();
@@ -78,7 +78,7 @@ public class FriendshipDBRepository implements Repository<UUID, Friendship> {
 
     @Override
     public Optional<Friendship> save(Friendship entity) {
-        try(Connection connection = DriverManager.getConnection(url, username, password)) {
+        try(Connection connection = DriverManager.getConnection(sqlurl, sqlusername, sqlpassword)) {
             validator.validate(entity);
             PreparedStatement statement = connection.prepareStatement("insert into friendships(id,user1_id,user2_id,friends_since,friendship_status) values (?,?,?,?,?)");
             statement.setObject(1, entity.getId());
@@ -95,7 +95,7 @@ public class FriendshipDBRepository implements Repository<UUID, Friendship> {
 
     @Override
     public Optional<Friendship> delete(UUID uuid) {
-        try (Connection connection = DriverManager.getConnection(url, username, password);
+        try (Connection connection = DriverManager.getConnection(sqlurl, sqlusername, sqlpassword);
              PreparedStatement statement = connection.prepareStatement("delete from friendships where id = ?")) {
             statement.setObject(1, uuid, Types.OTHER);
             Optional<Friendship> foundFriendship = getById(uuid);
@@ -115,7 +115,7 @@ public class FriendshipDBRepository implements Repository<UUID, Friendship> {
         if (entity == null) {
             throw new IllegalArgumentException("Entity must not be null");
         }
-        try (Connection connection = DriverManager.getConnection(url, username, password);
+        try (Connection connection = DriverManager.getConnection(sqlurl, sqlusername, sqlpassword);
              PreparedStatement statement = connection.prepareStatement("update friendships set user1_id = ?, user2_id = ?, friends_since = ?, friendship_status = ? where id = ?")) {
             validator.validate(entity);
             statement.setObject(1, entity.getUser1().getId(), Types.OTHER);
@@ -132,7 +132,7 @@ public class FriendshipDBRepository implements Repository<UUID, Friendship> {
     }
 
     public List<User> getFriendsOfUser(UUID uuid) {
-        try (Connection connection = DriverManager.getConnection(url,username,password)) {
+        try (Connection connection = DriverManager.getConnection(sqlurl, sqlusername, sqlpassword)) {
             List<User> friends = new ArrayList<>();
             PreparedStatement statement = connection.prepareStatement("select * from friendships where user1_id = ? or user2_id = ?");
             statement.setObject(1, uuid);
