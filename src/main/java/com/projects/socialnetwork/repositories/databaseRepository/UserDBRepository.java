@@ -14,9 +14,9 @@ import java.util.Set;
 
 public class UserDBRepository implements Repository<UUID, User> {
 
-    private String sqlurl;
-    private String sqlUsername;
-    private String sqlPassword;
+    protected String sqlurl;
+    protected String sqlUsername;
+    protected String sqlPassword;
 
     private Validator<User> validator;
 
@@ -43,7 +43,7 @@ public class UserDBRepository implements Repository<UUID, User> {
         }
     }
 
-    private User getUserFromResultSet(ResultSet resultSet) throws SQLException {
+    protected User getUserFromResultSet(ResultSet resultSet) throws SQLException {
         UUID id = UUID.fromString(resultSet.getString("id"));
         String firstName = resultSet.getString("firstname");
         String lastName = resultSet.getString("lastname");
@@ -161,4 +161,5 @@ public class UserDBRepository implements Repository<UUID, User> {
             throw new RuntimeException(e);
         }
     }
+
 }

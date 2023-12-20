@@ -12,6 +12,10 @@ import com.projects.socialnetwork.repositories.Repository;
 import com.projects.socialnetwork.repositories.databaseRepository.FriendshipDBRepository;
 import com.projects.socialnetwork.repositories.databaseRepository.MessageDBRepository;
 import com.projects.socialnetwork.repositories.databaseRepository.UserDBRepository;
+import com.projects.socialnetwork.repositories.paging.Page;
+import com.projects.socialnetwork.repositories.paging.Pageable;
+import com.projects.socialnetwork.repositories.pagingRepository.FriendshipDBPagingRepository;
+import com.projects.socialnetwork.repositories.pagingRepository.UserDBPagingRepository;
 import com.projects.socialnetwork.utils.observers.Observable;
 import com.projects.socialnetwork.utils.observers.Observer;
 import javafx.scene.input.InputMethodTextRun;
@@ -27,6 +31,11 @@ public class NetworkService implements Service, Observable {
 
     private List<Observer> observers = new ArrayList<>();
     private UserDBRepository userRepository;
+
+    private UserDBPagingRepository userDBPagingRepository;
+
+    private FriendshipDBPagingRepository friendshipDBPagingRepository;
+
     private FriendshipDBRepository friendshipRepository;
 
     private MessageDBRepository messageDBRepository;
@@ -35,6 +44,8 @@ public class NetworkService implements Service, Observable {
         this.userRepository = userRepository;
         this.friendshipRepository = friendshipRepository;
         this.messageDBRepository = messageDBRepository;
+        this.userDBPagingRepository = new UserDBPagingRepository("jdbc:postgresql://localhost:5432/social_network", "octav", "3496");
+        this.friendshipDBPagingRepository = new FriendshipDBPagingRepository("jdbc:postgresql://localhost:5432/social_network", "octav", "3496", userRepository);
     }
 
     @Override
@@ -289,6 +300,19 @@ public class NetworkService implements Service, Observable {
 
     }
 
+    public Page<UserFriendDTO> getFriendsOfUserPaged(UUID id, Pageable pageable) {
+
+        User user = userRepository.getById(id).orElseThrow(() -> new IllegalArgumentException("User does not exist"));
+
+        Iterable<Friendship> friendships = StreamSupport.stream(friendshipRepository.getAll().spliterator(), false)
+                .filter(friendship -> friendship.getFriendshipStatus().equals(FriendshipRequestStatus.ACCEPTED))
+                .collect(Collectors.toSet());
+
+        return friendshipDBPagingRepository.getFriendsOfUser(user.getId(), pageable);
+
+    }
+
+
     public Iterable<Friendship> getPendingFriendRequests(UUID id) {
         User user = userRepository.getById(id).orElseThrow(() -> new IllegalArgumentException("User does not exist"));
         return StreamSupport.stream(friendshipRepository.getAll().spliterator(), false)
@@ -351,5 +375,11 @@ public class NetworkService implements Service, Observable {
     public void notifyObservers() {
         for (Observer o : observers)
             o.update();
+    }
+
+
+
+    public Page<User> getAllUsersPaged(Pageable pageable) {
+        return userDBPagingRepository.findAll(pageable);
     }
 }

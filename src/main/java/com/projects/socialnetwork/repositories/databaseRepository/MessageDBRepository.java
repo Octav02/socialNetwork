@@ -10,11 +10,11 @@ import java.util.*;
 
 public class MessageDBRepository implements Repository<UUID, Message> {
 
-    private final String url;
-    private final String username;
-    private final String password;
+    protected final String url;
+    protected final String username;
+    protected final String password;
 
-    private final UserDBRepository userRepository;
+    protected final UserDBRepository userRepository;
 
     public MessageDBRepository(String url, String username, String password, UserDBRepository userRepository) {
         this.url = url;
