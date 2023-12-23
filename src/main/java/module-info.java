@@ -6,6 +6,7 @@ module com.projects.socialnetwork {
     requires com.dlsc.formsfx;
     requires org.kordamp.bootstrapfx.core;
     requires java.sql;
+    requires spring.security.crypto;
 
     opens com.projects.socialnetwork to javafx.fxml;
     exports com.projects.socialnetwork;

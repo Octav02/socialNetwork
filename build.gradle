@@ -42,6 +42,8 @@ dependencies {
     implementation('org.kordamp.bootstrapfx:bootstrapfx-core:0.4.0')
     implementation("org.postgresql:postgresql:42.6.0")
 
+    implementation('org.springframework.security:spring-security-crypto:5.5.8')
+    implementation('commons-logging:commons-logging:1.2')
     testImplementation("org.junit.jupiter:junit-jupiter-api:${junitVersion}")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:${junitVersion}")
 }

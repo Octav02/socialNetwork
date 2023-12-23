@@ -14,12 +14,36 @@ public class UserValidator implements Validator<User> {
         errors += validateLastName(entity.getLastName());
         errors += validateUsername(entity.getUsername());
         errors += validateEmail(entity.getEmail());
+        errors += validatePassword(entity.getPassword());
         if (!errors.isEmpty()) {
             throw new ValidationException(errors);
         }
     }
 
+    private String validatePassword(String password) {
+        StringBuilder errors = new StringBuilder();
 
+        if (password == null || password.isEmpty()) {
+            errors.append("Password cannot be empty!\n");
+        }
+        if (password.length() < 8) {
+            errors.append("Password must be at least 8 characters long!\n");
+        }
+        if (!password.matches(".*[A-Z].*")) {
+            errors.append("Password must contain at least one uppercase letter!\n");
+        }
+        if (!password.matches(".*[a-z].*")) {
+            errors.append("Password must contain at least one lowercase letter!\n");
+        }
+        if (!password.matches(".*[0-9].*")) {
+            errors.append("Password must contain at least one digit!\n");
+        }
+        if (!password.matches(".*[!@#$%^&*()\\-+].*")) {
+            errors.append("Password must contain at least one special character (e.g., !@#$%^&*()-+)!\n");
+        }
+
+        return errors.toString();
+    }
 
 
     private String validateEmail(String email) {

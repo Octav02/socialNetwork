@@ -4,13 +4,13 @@ import com.projects.socialnetwork.models.User;
 import com.projects.socialnetwork.repositories.Repository;
 import com.projects.socialnetwork.validators.UserValidator;
 import com.projects.socialnetwork.validators.Validator;
-
-import java.util.Optional;
-import java.util.UUID;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import java.sql.*;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 
 public class UserDBRepository implements Repository<UUID, User> {
 
@@ -19,6 +19,8 @@ public class UserDBRepository implements Repository<UUID, User> {
     protected String sqlPassword;
 
     private Validator<User> validator;
+
+    private BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     public UserDBRepository(String sqlurl, String sqlUsername, String sqlPassword) {
         this.sqlurl = sqlurl;
@@ -31,7 +33,7 @@ public class UserDBRepository implements Repository<UUID, User> {
     public Optional<User> getById(UUID uuid) {
         try (Connection connection = DriverManager.getConnection(sqlurl, sqlUsername, sqlPassword)) {
             PreparedStatement statement = connection.prepareStatement("select * from users where id = ?");
-            statement.setObject(1,uuid, Types.OTHER);
+            statement.setObject(1, uuid, Types.OTHER);
             ResultSet resultSet = statement.executeQuery();
             if (resultSet.next()) {
                 User user = getUserFromResultSet(resultSet);
@@ -50,12 +52,12 @@ public class UserDBRepository implements Repository<UUID, User> {
         String username = resultSet.getString("username");
         String email = resultSet.getString("email");
         String password = resultSet.getString("password");
-        return new User(id,firstName,lastName,username,email,password);
+        return new User(id, firstName, lastName, username, email, password);
     }
 
     @Override
     public Iterable<User> getAll() {
-        try(Connection connection = DriverManager.getConnection(sqlurl, sqlUsername, sqlPassword)) {
+        try (Connection connection = DriverManager.getConnection(sqlurl, sqlUsername, sqlPassword)) {
             Set<User> users = new HashSet<>();
             PreparedStatement statement = connection.prepareStatement("select * from users");
             ResultSet resultSet = statement.executeQuery();
@@ -74,6 +76,7 @@ public class UserDBRepository implements Repository<UUID, User> {
         if (entity == null) {
             throw new IllegalArgumentException("Entity cannot be null!");
         }
+        validator.validate(entity);
         String insertSQL = "insert into users(id, firstname, lastname, email, password, username) values (?, ?, ?, ?, ?, ?)";
         try (Connection connection = DriverManager.getConnection(sqlurl, sqlUsername, sqlPassword);
              PreparedStatement statement = connection.prepareStatement(insertSQL);) {
@@ -82,7 +85,9 @@ public class UserDBRepository implements Repository<UUID, User> {
             statement.setString(2, entity.getFirstName());
             statement.setString(3, entity.getLastName());
             statement.setString(4, entity.getEmail());
-            statement.setString(5, entity.getPassword());
+
+            String encodedPassword = passwordEncoder.encode(entity.getPassword());
+            statement.setString(5, encodedPassword);
             statement.setString(6, entity.getUsername());
             statement.executeUpdate();
             return Optional.of(entity);
@@ -133,9 +138,9 @@ public class UserDBRepository implements Repository<UUID, User> {
     }
 
     public Optional<User> getUserByUsername(String username) {
-        try (Connection connection = DriverManager.getConnection(sqlurl,sqlUsername, sqlPassword)) {
+        try (Connection connection = DriverManager.getConnection(sqlurl, sqlUsername, sqlPassword)) {
             PreparedStatement statement = connection.prepareStatement("select * from users where username = ?");
-            statement.setString(1,username);
+            statement.setString(1, username);
             ResultSet resultSet = statement.executeQuery();
             if (resultSet.next()) {
                 User user = getUserFromResultSet(resultSet);
@@ -150,7 +155,7 @@ public class UserDBRepository implements Repository<UUID, User> {
     public Optional<User> getUserByEmail(String email) {
         try (Connection connection = DriverManager.getConnection(sqlurl, sqlUsername, sqlPassword)) {
             PreparedStatement statement = connection.prepareStatement("select * from users where email = ?");
-            statement.setString(1,email);
+            statement.setString(1, email);
             ResultSet resultSet = statement.executeQuery();
             if (resultSet.next()) {
                 User user = getUserFromResultSet(resultSet);
