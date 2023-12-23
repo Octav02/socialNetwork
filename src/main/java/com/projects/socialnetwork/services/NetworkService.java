@@ -19,6 +19,7 @@ import com.projects.socialnetwork.repositories.pagingRepository.UserDBPagingRepo
 import com.projects.socialnetwork.utils.observers.Observable;
 import com.projects.socialnetwork.utils.observers.Observer;
 import javafx.scene.input.InputMethodTextRun;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import java.time.LocalDateTime;
 import java.time.Month;
@@ -40,12 +41,14 @@ public class NetworkService implements Service, Observable {
 
     private MessageDBRepository messageDBRepository;
 
-    public NetworkService(UserDBRepository userRepository, FriendshipDBRepository friendshipRepository, MessageDBRepository messageDBRepository) {
+    private BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+
+    public NetworkService(UserDBRepository userRepository, FriendshipDBRepository friendshipRepository, MessageDBRepository messageDBRepository, UserDBPagingRepository userDBPagingRepository, FriendshipDBPagingRepository friendshipDBPagingRepository) {
         this.userRepository = userRepository;
         this.friendshipRepository = friendshipRepository;
         this.messageDBRepository = messageDBRepository;
-        this.userDBPagingRepository = new UserDBPagingRepository("jdbc:postgresql://localhost:5432/social_network", "octav", "3496");
-        this.friendshipDBPagingRepository = new FriendshipDBPagingRepository("jdbc:postgresql://localhost:5432/social_network", "octav", "3496", userRepository);
+        this.userDBPagingRepository = userDBPagingRepository;
+        this.friendshipDBPagingRepository = friendshipDBPagingRepository;
     }
 
     @Override
@@ -274,7 +277,7 @@ public class NetworkService implements Service, Observable {
     @Override
     public User login(String username, String password) {
         User user = userRepository.getUserByUsername(username).orElseThrow(() -> new IllegalArgumentException("User does not exist"));
-        if (!user.getPassword().equals(password))
+        if (!passwordEncoder.matches(password, user.getPassword()))
             throw new IllegalArgumentException("Password is incorrect");
         return user;
     }

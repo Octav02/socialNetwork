@@ -179,7 +179,6 @@ public class HomeController implements Observer {
 
     public void setLoggedInUser(User loggedInUser) {
         this.loggedInUser = loggedInUser;
-        System.out.println(loggedInUser);
         welcomeUserLabel.setText("Welcome " + loggedInUser.getFirstName() + " " + loggedInUser.getLastName());
     }
 

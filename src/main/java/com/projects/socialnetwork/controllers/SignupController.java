@@ -32,10 +32,8 @@ public class SignupController {
         String username = usernameTextField.getText();
         String email = emailTextField.getText();
         String password = passwordTextField.getText();
-        System.out.println(firstName + " " + lastName + " " + username + " " + email + " " + password);
         try {
             service.addUser(firstName,lastName,username,email,password);
-            System.out.println("Felicitari, te-ai inregistrat cu succes!");
             goToLogin(event);
         }
         catch (Exception e) {

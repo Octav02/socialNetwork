@@ -31,13 +31,11 @@ public class LoginController {
     public void handleLogin(ActionEvent event) {
         String loginUsername = usernameTextField.getText();
         String loginPassword = passwordTextField.getText();
-        System.out.println(loginUsername + " " + loginPassword);
         User loggedInUser = null;
         try {
             loggedInUser = service.login(loginUsername, loginPassword);
 
             loadMainView(loggedInUser, event);
-            System.out.println("Felicitari, te-ai logat cu succes!" + loggedInUser);
         } catch (Exception e) {
             Alert alert = new Alert(Alert.AlertType.ERROR);
             alert.setTitle("Error");
